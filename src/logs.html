@@ -1,0 +1,77 @@
+<script>
+  function renderLogs() {
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h3>Search logs</h3>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom: 8px;">
+          <div style="flex:1; min-width: 150px;">
+            <label class="field-label">Recipient contains</label>
+            <input id="l-recipient" class="field-input">
+          </div>
+          <div style="flex:1; min-width: 150px;">
+            <label class="field-label">Status</label>
+            <select id="l-status" class="field-input">
+              <option value="">Any</option>
+              <option value="Sent">Sent</option>
+              <option value="Failed">Failed</option>
+              <option value="Retry">Retry</option>
+              <option value="Skipped">Skipped</option>
+            </select>
+          </div>
+          <div style="flex:1; min-width: 150px;">
+            <label class="field-label">Template (Exact)</label>
+            <input id="l-template" class="field-input" placeholder="E.g. Welcome">
+          </div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          <div style="flex:1; min-width: 150px;">
+            <label class="field-label">Start Date</label>
+            <input type="date" id="l-dateFrom" class="field-input">
+          </div>
+          <div style="flex:1; min-width: 150px;">
+            <label class="field-label">End Date</label>
+            <input type="date" id="l-dateTo" class="field-input">
+          </div>
+        </div>
+        <div style="margin-top: 16px;">
+          <button class="btn-primary" onclick="runLogSearch()">Search</button>
+        </div>
+      </div>
+      <div id="log-results"></div>
+    `;
+    runLogSearch();
+  }
+
+  function runLogSearch() {
+    const filters = {
+      recipient: document.getElementById('l-recipient') ? document.getElementById('l-recipient').value.trim() : '',
+      status: document.getElementById('l-status') ? document.getElementById('l-status').value : '',
+      template: document.getElementById('l-template') ? document.getElementById('l-template').value.trim() : '',
+      dateFrom: document.getElementById('l-dateFrom') ? document.getElementById('l-dateFrom').value : '',
+      dateTo: document.getElementById('l-dateTo') ? document.getElementById('l-dateTo').value : ''
+    };
+    document.getElementById('log-results').innerHTML = '<div class="loading">Searching&hellip;</div>';
+    google.script.run
+      .withSuccessHandler(renderLogResults)
+      .withFailureHandler(err => showLoadError('logs', err))
+      .searchLogs(filters);
+  }
+
+  function renderLogResults(rows) {
+    const html = rows.length === 0
+      ? '<div class="card"><div class="muted">No matching log entries.</div></div>'
+      : '<div class="card"><h3>' + rows.length + ' result(s)</h3>' +
+        rows.map(r => `
+          <div class="list-row" style="align-items:flex-start;">
+            <span>
+              ${escapeHtml(r['Recipient'])}<br>
+              <span class="muted">${escapeHtml(r['Subject'] || '')} &middot; ${escapeHtml(r['Template'] || '')}</span><br>
+              <span class="muted">${escapeHtml(r['Timestamp'])}</span>
+              ${r['Error'] ? '<br><span style="color:#d93025;">' + escapeHtml(r['Error']) + '</span>' : ''}
+            </span>
+            <span class="badge ${escapeHtml(r['Status'])}">${escapeHtml(r['Status'])}</span>
+          </div>`).join('') +
+        '</div>';
+    document.getElementById('log-results').innerHTML = html;
+  }
+</script>

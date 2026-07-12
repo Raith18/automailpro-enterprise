@@ -1,0 +1,90 @@
+<script>
+  let _editingTemplateName = null;
+
+  function renderTemplates() {
+    document.getElementById('content').innerHTML = '<div class="loading">Loading templates&hellip;</div>';
+    google.script.run
+      .withSuccessHandler(buildTemplatesPage)
+      .withFailureHandler(err => showLoadError('templates', err))
+      .getAllTemplates();
+  }
+
+  function buildTemplatesPage(templates) {
+    const rows = templates.length === 0
+      ? '<div class="muted" style="padding:8px 0;">No templates yet.</div>'
+      : templates.map(t => `
+          <div class="list-row" style="align-items:flex-start;">
+            <span>
+              <strong>${escapeHtml(t['Template Name'])}</strong>
+              ${t['Active'] === false || String(t['Active']).toLowerCase() === 'false' ? '<span class="badge Failed" style="margin-left:6px;">Inactive</span>' : '<span class="badge Sent" style="margin-left:6px;">Active</span>'}
+              <br><span class="muted">${escapeHtml(t['Description'] || '')}</span>
+            </span>
+            <span>
+              <button class="btn-small" onclick='editTemplate(${JSON.stringify(t)})'>Edit</button>
+              <button class="btn-small danger" onclick="confirmDeleteTemplate(${JSON.stringify(t['Template Name'])})">Delete</button>
+            </span>
+          </div>`).join('');
+
+    const html = `
+      <div class="card">
+        <h3>Templates</h3>
+        <div id="template-list">${rows}</div>
+        <button class="btn-primary" style="margin-top:12px;" onclick="editTemplate(null)">+ New template</button>
+      </div>
+      <div id="template-editor"></div>
+    `;
+    document.getElementById('content').innerHTML = html;
+  }
+
+  function editTemplate(template) {
+    _editingTemplateName = template ? template['Template Name'] : null;
+    const html = `
+      <div class="card">
+        <h3>${template ? 'Edit template' : 'New template'}</h3>
+        <div id="editor-errors"></div>
+        <label class="field-label">Template name *</label>
+        <input id="t-name" class="field-input" value="${template ? escapeHtml(template['Template Name']) : ''}" ${template ? 'readonly' : ''}>
+        <label class="field-label">Subject * (supports {{Placeholders}})</label>
+        <input id="t-subject" class="field-input" value="${template ? escapeHtml(template['Subject']) : ''}">
+        <label class="field-label">Description</label>
+        <input id="t-description" class="field-input" value="${template ? escapeHtml(template['Description'] || '') : ''}">
+        <label class="field-label">HTML body * (supports {{Placeholders}} and {{#if Field}}...{{/if}})</label>
+        <textarea id="t-html" class="field-input" rows="8" style="font-family:monospace; font-size:11px;">${template ? escapeHtml(template['HTML Template']) : ''}</textarea>
+        <label class="field-label"><input type="checkbox" id="t-active" ${!template || template['Active'] !== false ? 'checked' : ''}> Active</label>
+        <button class="btn-primary" onclick="saveTemplateEditor()">Save template</button>
+        <button class="btn-secondary" onclick="renderTemplates()">Cancel</button>
+        <div id="editor-status" style="margin-top:8px; font-size:12px;"></div>
+      </div>
+    `;
+    document.getElementById('template-editor').innerHTML = html;
+  }
+
+  function saveTemplateEditor() {
+    const data = {
+      name: document.getElementById('t-name').value.trim(),
+      subject: document.getElementById('t-subject').value.trim(),
+      description: document.getElementById('t-description').value.trim(),
+      htmlTemplate: document.getElementById('t-html').value,
+      active: document.getElementById('t-active').checked
+    };
+    document.getElementById('editor-errors').innerHTML = '';
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          renderTemplates();
+        } else {
+          document.getElementById('editor-errors').innerHTML =
+            '<div style="color:#d93025; font-size:12px; padding:6px 0;">' + res.errors.map(escapeHtml).join('<br>') + '</div>';
+        }
+      })
+      .withFailureHandler(err => {
+        document.getElementById('editor-status').innerHTML = '<span style="color:#d93025;">' + escapeHtml(err.message || err) + '</span>';
+      })
+      .saveTemplateForm(data);
+  }
+
+  function confirmDeleteTemplate(name) {
+    if (!confirm('Delete template "' + name + '"? This cannot be undone.')) return;
+    google.script.run.withSuccessHandler(renderTemplates).deleteTemplateByName(name);
+  }
+</script>

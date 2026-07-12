@@ -1,0 +1,18 @@
+{
+  "name": "smart-mail-scheduler",
+  "version": "0.1.0",
+  "description": "Smart Mail Scheduler - Google Workspace Add-on (Apps Script)",
+  "private": true,
+  "scripts": {
+    "login": "clasp login",
+    "create": "clasp create --type sheets --title \"Smart Mail Scheduler\" --rootDir ./src",
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "open": "clasp open",
+    "deploy": "clasp deploy",
+    "watch": "clasp push --watch"
+  },
+  "devDependencies": {
+    "@google/clasp": "^3.3.0"
+  }
+}

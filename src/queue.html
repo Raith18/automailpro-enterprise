@@ -1,0 +1,43 @@
+<script>
+  function renderQueue() {
+    document.getElementById('content').innerHTML = '<div class="loading">Loading queue&hellip;</div>';
+    google.script.run
+      .withSuccessHandler(buildQueuePage)
+      .withFailureHandler(err => showLoadError('queue', err))
+      .getQueueSummary();
+  }
+
+  function buildQueuePage(q) {
+    document.getElementById('content').innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-value">${q.pending}</div><div class="stat-label">Pending</div></div>
+        <div class="stat-box"><div class="stat-value">${q.processing}</div><div class="stat-label">Processing</div></div>
+        <div class="stat-box"><div class="stat-value">${q.retryQueue}</div><div class="stat-label">Retry queue</div></div>
+        <div class="stat-box ok"><div class="stat-value">${q.completed}</div><div class="stat-label">Completed</div></div>
+        <div class="stat-box warn"><div class="stat-value">${q.failed}</div><div class="stat-label">Failed</div></div>
+        <div class="stat-box"><div class="stat-value">${q.cancelled}</div><div class="stat-label">Cancelled</div></div>
+      </div>
+      <div class="card">
+        <p class="muted">If a run ever errors out mid-send, a row can get stuck in "Processing".
+        This scans for rows stuck longer than 10 minutes and resets them to Pending.</p>
+        <button class="btn-secondary" onclick="recoverQueue()">Recover stuck rows</button>
+        <div id="recover-status" style="margin-top:8px; font-size:12px;"></div>
+      </div>
+    `;
+  }
+
+  function recoverQueue() {
+    document.getElementById('recover-status').innerText = 'Checking…';
+    google.script.run
+      .withSuccessHandler(count => {
+        document.getElementById('recover-status').innerText = count > 0
+          ? `Recovered ${count} stuck row(s).`
+          : 'No stuck rows found.';
+        renderQueue();
+      })
+      .withFailureHandler(err => {
+        document.getElementById('recover-status').innerHTML = '<span style="color:#d93025;">' + escapeHtml(err.message || err) + '</span>';
+      })
+      .recoverStuckQueueRows();
+  }
+</script>

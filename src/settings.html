@@ -1,0 +1,41 @@
+<script>
+  function renderSettings() {
+    document.getElementById('content').innerHTML = '<div class="loading">Loading settings&hellip;</div>';
+    google.script.run
+      .withSuccessHandler(buildSettingsForm)
+      .withFailureHandler(err => showLoadError('settings', err))
+      .getAllConfig();
+  }
+
+  function buildSettingsForm(config) {
+    const rows = Object.keys(config).map(key => `
+      <label class="field-label">${escapeHtml(key)}</label>
+      <input id="cfg-${escapeHtml(key)}" class="field-input" value="${escapeHtml(String(config[key]))}">
+    `).join('');
+
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h3>Settings</h3>
+        ${rows}
+        <button class="btn-primary" onclick="saveSettingsForm(${JSON.stringify(Object.keys(config))})">Save settings</button>
+        <div id="settings-status" style="margin-top:8px; font-size:12px;"></div>
+      </div>
+    `;
+  }
+
+  function saveSettingsForm(keys) {
+    const updates = {};
+    keys.forEach(key => {
+      updates[key] = document.getElementById('cfg-' + key).value;
+    });
+    document.getElementById('settings-status').innerText = 'Saving…';
+    google.script.run
+      .withSuccessHandler(() => {
+        document.getElementById('settings-status').innerHTML = '<span style="color:#188038;">Saved.</span>';
+      })
+      .withFailureHandler(err => {
+        document.getElementById('settings-status').innerHTML = '<span style="color:#d93025;">' + escapeHtml(err.message || err) + '</span>';
+      })
+      .saveConfigUpdates(updates);
+  }
+</script>

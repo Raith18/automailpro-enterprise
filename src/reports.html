@@ -1,0 +1,63 @@
+<script>
+  function renderReports() {
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h3>Generate a report</h3>
+        <button class="btn-secondary" onclick="loadReport('Daily')">Daily</button>
+        <button class="btn-secondary" onclick="loadReport('Weekly')">Weekly</button>
+        <button class="btn-secondary" onclick="loadReport('Monthly')">Monthly</button>
+      </div>
+      <div id="report-output"></div>
+    `;
+  }
+
+  function loadReport(period) {
+    document.getElementById('report-output').innerHTML = '<div class="loading">Generating&hellip;</div>';
+    google.script.run
+      .withSuccessHandler(r => renderReportOutput(period, r))
+      .withFailureHandler(err => showLoadError('report', err))
+      .generateReport(period);
+  }
+
+  function renderReportOutput(period, r) {
+    const templateRows = r.topTemplates.length === 0
+      ? '<div class="muted">No sends in this period.</div>'
+      : r.topTemplates.map(t => '<div class="list-row"><span>' + escapeHtml(t.name) + '</span><span>' + t.count + '</span></div>').join('');
+
+    const errorRows = r.commonErrors.length === 0
+      ? '<div class="muted">No failures in this period.</div>'
+      : r.commonErrors.map(e => '<div class="list-row"><span>' + escapeHtml(e.message) + '</span><span>' + e.count + '</span></div>').join('');
+
+    document.getElementById('report-output').innerHTML = `
+      <div class="card">
+        <h3>${escapeHtml(period)} report</h3>
+        <div class="muted">Generated ${escapeHtml(r.generatedAt)}</div>
+        <div class="stat-grid" style="margin-top:10px;">
+          <div class="stat-box"><div class="stat-value">${r.sent}</div><div class="stat-label">Sent</div></div>
+          <div class="stat-box ${r.failed > 0 ? 'warn' : 'ok'}"><div class="stat-value">${r.failed}</div><div class="stat-label">Failed</div></div>
+        </div>
+        <div class="stat-box" style="margin-top:8px;"><div class="stat-value">${r.successRate !== null ? r.successRate + '%' : '&mdash;'}</div><div class="stat-label">Success rate</div></div>
+        <h3 style="margin-top:16px;">Top templates</h3>
+        ${templateRows}
+        <h3 style="margin-top:16px;">Common errors</h3>
+        ${errorRows}
+        <button class="btn-primary" onclick="emailReport('${period}')">Email this report to Admin</button>
+        <div id="email-status" style="margin-top:8px; font-size:12px;"></div>
+      </div>
+    `;
+  }
+
+  function emailReport(period) {
+    document.getElementById('email-status').innerText = 'Sending…';
+    google.script.run
+      .withSuccessHandler(res => {
+        document.getElementById('email-status').innerHTML = res.sent
+          ? '<span style="color:#188038;">Emailed to Admin.</span>'
+          : '<span style="color:#d93025;">' + escapeHtml(res.reason) + '</span>';
+      })
+      .withFailureHandler(err => {
+        document.getElementById('email-status').innerHTML = '<span style="color:#d93025;">' + escapeHtml(err.message || err) + '</span>';
+      })
+      .emailReportToAdmin(period);
+  }
+</script>
