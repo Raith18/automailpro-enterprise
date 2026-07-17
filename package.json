@@ -1,18 +1,35 @@
 {
   "name": "smart-mail-scheduler",
   "version": "0.1.0",
-  "description": "Smart Mail Scheduler - Google Workspace Add-on (Apps Script)",
+  "description": "AutoMailPro — Enterprise Automation Platform",
   "private": true,
   "scripts": {
-    "login": "clasp login",
-    "create": "clasp create --type sheets --title \"Smart Mail Scheduler\" --rootDir ./src",
-    "push": "clasp push",
-    "pull": "clasp pull",
-    "open": "clasp open",
-    "deploy": "clasp deploy",
-    "watch": "clasp push --watch"
+    "dev": "vite",
+    "build:frontend": "vite build",
+    "build:backend": "tsc -p tsconfig.gas.json",
+    "build:frontend": "vite build",
+    "build:copy": "mkdir -p dist && cp appsscript.json dist/",
+    "build": "npm run build:frontend && npm run build:backend && npm run build:copy",
+    "push": "npm run build && node_modules/.bin/clasp push",
+    "deploy": "npm run push && node_modules/.bin/clasp deploy --description 'AutoMailPro v20.0'"
   },
   "devDependencies": {
-    "@google/clasp": "^3.3.0"
+    "@google/clasp": "^3.3.0",
+    "@types/google-apps-script": "^2.0.11",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5",
+    "vite-plugin-singlefile": "^2.3.3"
+  },
+  "keywords": [],
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.2.0",
+    "@mui/material": "^9.2.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }

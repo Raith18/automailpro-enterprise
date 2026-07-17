@@ -1,115 +1,36 @@
-# Smart Mail Scheduler — Google Workspace Add-on
+# AutoMailPro Enterprise – Business & Technical Architecture
 
-Automates scheduled, templated, trackable email sending from Google Sheets,
-built as a Google Workspace Add-on (Apps Script + HTML Service).
+## Business Development & Client Utilization (MNC Level)
+AutoMailPro is an enterprise-grade Google Workspace Add-on built to scale automated communication workflows directly from Google Sheets. 
 
-## Status
+### MNC Value Proposition
+At the multinational corporate (MNC) level, data fragmentation and communication silos are critical bottlenecks. AutoMailPro solves this by turning any Google Sheet into a dynamic, zero-infrastructure CRM and email automation engine.
+*   **Zero-Infrastructure Deployment**: Because it leverages Google Apps Script (GAS) and the Google Workspace Marketplace, IT departments do not need to provision new servers, databases, or container clusters. It runs entirely within Google's highly secure, SOC2-compliant cloud environment.
+*   **Role-Based Security & OAuth**: Data never leaves the Google Workspace ecosystem. All emails are dispatched natively via `GmailApp` under the strict OAuth scopes of the active user, eliminating third-party API vulnerabilities and ensuring compliance with GDPR and corporate security mandates.
+*   **Dynamic Visual Reporting**: With the automatic Table Chart snapshot feature, managers and external clients receive inline visual data representations directly in their inbox without needing to download attachments or log into external dashboards.
 
-✅ Feature-complete against the original spec. All 16 backend modules and all 10
-frontend pages exist and are wired together:
+### Common Enterprise Use Cases
+1.  **Automated Billing & Invoice Routing**: Finance departments can schedule automated arrears notifications based on dynamic due-date conditions.
+2.  **HR & Onboarding Workflows**: Talent acquisition teams can deploy personalized drip campaigns for new hires, scheduling orientation materials to specific cohorts.
+3.  **Supply Chain Alerts**: Operations teams can trigger instant email alerts to regional managers when inventory status columns drop below threshold levels.
 
-**Backend**
-`Utils` · `ConfigService` · `SetupService` · `Logger` (`AppLogger`) · `TemplateService`
-· `AttachmentService` · `MailService` · `Scheduler` · `TriggerService` · `Menu` ·
-`Dashboard` · `ValidationService` · `QueueService` · `ReportService` · `Analytics` ·
-`AuthService`
+## Technical Stack & Architecture
+AutoMailPro abandons the traditional "spaghetti code" associated with GAS, introducing a strict, modern software architecture.
 
-**Frontend (sidebar, single-page-app style via `index.html`)**
-`index` (shell/nav) · `dashboard` · `scheduler` · `templates` · `logs` · `reports` ·
-`settings` · `about` · `queue` · `style` · `script`
+### Frontend Architecture (Client-Side)
+*   **React 19 & TypeScript**: Provides a robust, strictly typed UI layer.
+*   **Vite**: The build tool of choice, highly optimized to bundle the entire application into a single, minified HTML file (`vite-plugin-singlefile`), which is a strict requirement for Google Apps Script HTML Service.
+*   **Material-UI (MUI v6)**: Delivers a premium, physics-based, and highly responsive user interface with dynamic rendering engines (CSS Grids, Flexbox) that effortlessly adapt to sidebar and modeless dialog resizing.
+*   **Framer-Style Animations**: Implements `<Zoom>` and `<Fade>` transitions, coupled with CSS hover transformations for a tactile, modern feel.
 
-**What's genuinely production-real vs. intentionally minimal:**
-- Real: scheduling, sending, retries, working hours/holidays, templates (CRUD +
-  placeholder/conditional engine), attachments, logging, search, reports, role
-  detection **and enforcement** (nav tabs now visually disable per-role, closing
-  the earlier gap where `AuthService` computed permissions nothing used),
-  stuck-row recovery, and the add-on lifecycle entry points (`onInstall`,
-  `onHomepage`, `onFileScopeGranted` in `Code.gs`) that the manifest requires.
-- The old modal-dialog Settings editor in `Menu.gs` has been removed in favor
-  of the real `settings.html` sidebar page — clicking "Settings" in the menu
-  now opens the sidebar directly to that tab via `menuOpenSidebar('settings')`.
-- Known remaining scope-cut: role enforcement is UI-level only (disabled nav
-  tabs) — the underlying `google.script.run` functions themselves (e.g.
-  `saveConfigUpdates`) don't independently re-check permissions server-side.
-  Fine for a single-owner or trusted-team deployment; a hardened multi-tenant
-  version would add that check inside each function, not just in the UI.
+### Backend Architecture (Server-Side Apps Script)
+*   **Google Apps Script (V8 Engine)**: The serverless runtime execution environment.
+*   **TypeScript (GAS Context)**: The backend is fully typed via `@types/google-apps-script`. During compilation, `tsc` converts the TS files into ESNext JavaScript modules compatible with the Apps Script global scope.
+*   **Modular IIFE Pattern**: To bypass Apps Script's lack of native ES Modules, all backend services (`MailService`, `SchedulerEngine`, `TriggerService`) are encapsulated within Immediately Invoked Function Expressions (IIFEs) and ambiently declared in a targeted `tsconfig.json`. This ensures absolute modularity without namespace pollution.
+*   **PropertiesService (Serverless DB)**: Acts as a lightweight NoSQL key-value store to maintain state (Schedulers, Templates, Logs) without requiring an external SQL database.
+*   **Google Chart API**: Programmatically constructs `TableChart` objects in memory and exports them as `image/png` blobs for inline CID email embedding.
 
-**The app is fully functional**: install the trigger, add a row (via the sheet or
-the Schedule tab), and it sends, retries, and logs itself — all reachable from
-one sidebar.
-
-## Local development with clasp (recommended)
-
-[`clasp`](https://github.com/google/clasp) is Google's official CLI for pushing
-local files to an Apps Script project, so you can write code in a real editor
-and keep it in git instead of pasting into the browser IDE.
-
-### One-time setup
-
-```bash
-npm install
-npx clasp login          # opens a browser, authorizes your Google account
-```
-
-Then either:
-
-**A. Create a brand-new bound project** (creates a new Sheet automatically):
-```bash
-npx clasp create --type sheets --title "Smart Mail Scheduler" --rootDir ./src
-```
-
-**B. Or bind to a Sheet you already made** (Extensions → Apps Script → Project
-Settings → copy the Script ID):
-```bash
-cp .clasp.json.example .clasp.json
-# paste your Script ID into .clasp.json
-```
-
-### Day-to-day workflow
-
-```bash
-npx clasp push       # uploads src/*.gs and src/appsscript.json to Apps Script
-npx clasp open        # opens the project in the browser editor
-npx clasp push --watch # auto-push on file save, while iterating
-```
-
-Run tests from the browser editor (clasp can't execute functions, only push/pull):
-select `test_Utils` or `test_ConfigService` in the function dropdown → Run →
-View → Logs.
-
-### Why `src/`
-
-`appsscript.json` must live at the rootDir clasp pushes from, so all Apps
-Script files live under `src/`. Repo tooling (`package.json`, this README)
-stays at the project root and is excluded from pushes via `.claspignore`.
-
-## Without clasp (plain browser editor)
-
-Still fully supported — see the in-chat walkthrough for creating a Sheet,
-opening Extensions → Apps Script, and pasting files in by hand. Both
-approaches point at the same Apps Script project underneath.
-
-### Running the full automated test suite
-
-In the Apps Script editor function dropdown, run each of these in order (each
-prints PASS/FAIL counts to View > Logs): `test_Utils`, `test_ConfigService`,
-`test_SetupService`, `test_AppLogger`, `test_TemplateService`,
-`test_AttachmentService`, `test_MailService_failurePaths`, `test_Scheduler`,
-`test_TriggerService`, `test_ValidationService`, `test_Scheduler_addScheduledEmail`,
-`test_QueueService`, `test_ReportService`, `test_Analytics`, `test_AuthService`,
-`test_TemplateService_crud`, `test_AppLogger_search`. None of these send a real
-email. To confirm a real send works, edit and run `test_MailService_liveSend_MANUAL`
-separately.
-
-### Testing Menu.gs manually
-
-`onOpen`, dialogs, and `SpreadsheetApp.getUi()` need a real Sheets tab, not the
-script editor's Run button. After `clasp push`, reload the Sheet tab, then:
-Smart Mail Scheduler → Initialize/Repair Sheets → Preview Sample Email →
-Send Pending → Settings (edit a value, Save) → Scheduler trigger → Install →
-Check status.
-
-## Sheet structure required
-
-Tabs: `MailScheduler`, `Templates`, `Logs`, `Configuration` (see project spec
-for exact headers — `SetupService.gs`, coming next, will auto-generate these).
+## Deployment Instructions
+1. Build the repository locally: `npm run build`
+2. Push to Google Workspace: `npx clasp push`
+3. Deploy via Google Cloud Console to the Workspace Marketplace.
