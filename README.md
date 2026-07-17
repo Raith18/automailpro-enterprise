@@ -1,5 +1,27 @@
 # AutoMailPro Enterprise – Business & Technical Architecture
 
+## Interface Showcase
+
+![Launch Menu](docs/assets/6.png)
+*Figure 1: Accessing AutoMailPro directly from the Google Sheets custom menu.*
+
+![Dashboard Overview](docs/assets/1.png)
+*Figure 2: The dynamic, resizable floating dashboard displaying live quota statistics.*
+
+![Schedulers Hub](docs/assets/2.png)
+*Figure 3: Active scheduling pipelines with visual indicator tags.*
+
+![Execution Logs](docs/assets/3.png)
+*Figure 4: Real-time telemetry and error logging for all email dispatches.*
+
+![Template Editor](docs/assets/4.png)
+*Figure 5: Rich-text template management with variable merge tags.*
+
+![Settings](docs/assets/5.png)
+*Figure 6: Enterprise-grade configuration panel.*
+
+> **🎥 Watch the 30-Second Demo Video**: [Click here to view the full UI walkthrough](docs/assets/demo.webm)
+
 ## Business Development & Client Utilization (MNC Level)
 AutoMailPro is an enterprise-grade Google Workspace Add-on built to scale automated communication workflows directly from Google Sheets. 
 

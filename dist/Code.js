@@ -148,9 +148,47 @@ function onOpen() {
         .addSeparator()
         .addItem('Run All Schedulers Now', 'triggerRunAll')
         .addItem('Sync Triggers', 'syncTriggers')
+        .addSeparator()
+        .addItem('Generate Sample Schedulers', 'generateSampleSchedulers')
         .addToUi();
 }
 function syncTriggers() {
     TriggerService.syncAll();
     SpreadsheetApp.getUi().alert('Triggers synchronized successfully!');
+}
+function generateSampleSchedulers() {
+    const sample1 = {
+        id: Utilities.getUuid(),
+        name: 'Sample: Invoice Routing',
+        tabName: 'Sheet1',
+        tableStartRow: 1,
+        recipientColumn: 'Email',
+        subjectTemplate: 'Invoice #{{InvoiceNo}} is Due',
+        bodyTemplate: 'Hello {{Name}},<br><br>Your invoice #{{InvoiceNo}} for {{Amount}} is due on {{DueDate}}.',
+        scheduleType: 'daily',
+        timeValue: '09:00',
+        status: 'active',
+        conditions: [
+            { column: 'Status', operator: 'equals', value: 'Unpaid' }
+        ],
+        maxRetries: 3
+    };
+    const sample2 = {
+        id: Utilities.getUuid(),
+        name: 'Sample: HR Onboarding',
+        tabName: 'Sheet1',
+        tableStartRow: 1,
+        recipientColumn: 'Email',
+        subjectTemplate: 'Welcome to the Team, {{Name}}!',
+        bodyTemplate: 'Hi {{Name}},<br><br>We are thrilled to have you join us starting {{StartDate}}.',
+        scheduleType: 'weekly',
+        daysOfWeek: [1], // Monday
+        timeValue: '10:00',
+        status: 'paused',
+        conditions: [],
+        maxRetries: 2
+    };
+    AppStorageManager.saveScheduler(sample1);
+    AppStorageManager.saveScheduler(sample2);
+    SpreadsheetApp.getUi().alert('Successfully added 2 sample schedulers! Open the Dashboard to view them.');
 }
